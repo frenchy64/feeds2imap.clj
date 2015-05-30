@@ -1,4 +1,4 @@
-(ns feeds2imap.gpg
+(ns ^:core.typed feeds2imap.gpg
   (:require [clojure.java.shell :as shell]
             [clojure.core.typed :refer [ann]]
             [feeds2imap.annotations :refer :all]

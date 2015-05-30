@@ -1,4 +1,4 @@
-(ns feeds2imap.logging
+(ns ^:core.typed feeds2imap.logging
   (:require [clojure.core.typed :refer [ann Seq Agent1 Any check-ns cf All]]))
 
 (ann logger (Agent1 nil))

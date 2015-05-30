@@ -1,4 +1,4 @@
-(ns feeds2imap.core
+(ns ^:core.typed feeds2imap.core
   (:gen-class)
   (:require [feeds2imap.feeds :as feeds]
             [feeds2imap.settings :as settings]
@@ -9,12 +9,15 @@
             [feeds2imap.logging :as logging :refer [info error]]
             [feeds2imap.annotations :refer :all]
             [clojure.pprint :refer [pprint]]
-            [clojure.core.typed :refer [ann Any Keyword]]
+            [clojure.core.typed :refer [ann Any Keyword] :as t]
             [clojure.core.match :refer [match]])
   (:import [java.net NoRouteToHostException UnknownHostException]
            [javax.mail MessagingException]
            [java.io File]
            [java.lang NullPointerException]))
+
+(t/tc-ignore
+  (alter-meta! *ns* assoc :core.typed true))
 
 (set! *warn-on-reflection* true)
 

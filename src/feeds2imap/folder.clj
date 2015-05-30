@@ -1,4 +1,4 @@
-(ns feeds2imap.folder
+(ns ^:core.typed feeds2imap.folder
   (:require [feeds2imap.logging :refer [info error]]
             [clojure.core.typed :refer [non-nil-return ann U Seqable Map Keyword Any]]
             [feeds2imap.annotations :refer :all])

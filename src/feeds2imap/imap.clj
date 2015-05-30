@@ -1,4 +1,4 @@
-(ns feeds2imap.imap
+(ns ^:core.typed feeds2imap.imap
   (:require [feeds2imap.folder :as folder]
             [feeds2imap.message :as message]
             [clojure.core.typed :refer [non-nil-return ann]])

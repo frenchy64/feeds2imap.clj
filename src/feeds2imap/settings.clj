@@ -1,4 +1,4 @@
-(ns feeds2imap.settings
+(ns ^:core.typed feeds2imap.settings
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.core.typed :refer [ann Any Set HMap U IFn]]
@@ -46,7 +46,7 @@
     (bootstrap-file path initial)
     (edn/read-string (slurp path))))
 
-(ann read-encrypted-file [String -> (U ImapConfiguration Boolean)])
+(ann ^:no-check read-encrypted-file [String -> (U ImapConfiguration Boolean)])
 (defn ^:private read-encrypted-file [path]
   (bootstrap-config-dir)
   (let [path (str (config-dir) path)]
@@ -69,7 +69,7 @@
   (bootstrap-config-dir)
   (bootstrap-file (str (config-dir) path) data :force true))
 
-(ann read-items [-> (Set String)])
+(ann ^:no-check read-items [-> (Set String)])
 (defn read-items []
   (read-or-create-file "read-items.clj" (hash-map)))
 
@@ -95,7 +95,7 @@
 (defn ^:private encrypted-imap []
   (read-encrypted-file "imap.clj.gpg"))
 
-(ann unencrypted-imap [-> ImapConfiguration])
+(ann ^:no-check unencrypted-imap [-> ImapConfiguration])
 (defn ^:private unencrypted-imap []
   (read-or-create-file "imap.clj" (hash-map)))
 

@@ -1,4 +1,4 @@
-(ns feeds2imap.feeds
+(ns ^:core.typed feeds2imap.feeds
   (:require [hiccup.core :refer :all]
             [feedparser-clj.core :refer :all]
             [feeds2imap.message :as message]
@@ -7,7 +7,7 @@
             [clojure.pprint :refer :all]
             [feeds2imap.logging :refer [info error]]
             [feeds2imap.macro :refer :all]
-            [clojure.core.typed :refer [ann Map IFn HMap]]
+            [clojure.core.typed :refer [ann Map IFn HMap] :as t]
             [feeds2imap.types :refer :all]
             [feeds2imap.annotations :refer :all]
             [digest :refer [md5]]
@@ -26,7 +26,7 @@
 (defn map-items
   "Map function over items for each folder."
   [fun coll]
-  (map (fn [[folder items]] [folder (map fun items)]) coll))
+  (map (t/fn [[folder items]] [folder (map fun items)]) coll))
 
 (ann ^:no-check pmap-items [(IFn [String -> ParsedFeed]) (Folder Urls) -> (Folder ParsedFeed)])
 (defn pmap-items

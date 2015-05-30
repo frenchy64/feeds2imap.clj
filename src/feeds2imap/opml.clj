@@ -1,4 +1,4 @@
-(ns feeds2imap.opml
+(ns ^:core.typed feeds2imap.opml
   (:require [clojure.pprint :refer [pprint]]
             [clojure.core.typed :refer [ann Keyword Map Vec]]
             [feeds2imap.types :refer :all]

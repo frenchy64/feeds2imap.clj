@@ -1,4 +1,4 @@
-(ns feeds2imap.types
+(ns ^:core.typed feeds2imap.types
   (:require [clojure.core.typed :refer [defalias Set HMap Seqable Vec Map Keyword Option Any TFn Num]])
   (:import [javax.mail.internet MimeMessage]
            [java.util Date]))

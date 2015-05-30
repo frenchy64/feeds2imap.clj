@@ -1,4 +1,4 @@
-(ns feeds2imap.annotations
+(ns ^:core.typed feeds2imap.annotations
   (:require [clojure.core.typed :refer [ann Any Option Map Keyword U IFn]]
             [feeds2imap.types :refer :all]
             [clojure.pprint]
@@ -13,7 +13,7 @@
 
 (ann ^:no-check clojure.pprint/pprint (IFn [Any -> nil]
                                            [Any BufferedWriter -> nil]))
-(ann ^:no-check clojure.core/print-str [Any * -> String])
+#_(ann ^:no-check clojure.core/print-str [Any * -> String])
 
 (ann ^:no-check clojure.core/slurp [String -> String])
 (ann ^:no-check clojure.core/spit  [String String -> nil])
