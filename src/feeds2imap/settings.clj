@@ -1,7 +1,7 @@
 (ns ^:core.typed feeds2imap.settings
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.core.typed :refer [ann Any Set HMap U IFn]]
+            [clojure.core.typed :refer [ann Any Set HMap U IFn] :as t]
             [feeds2imap.gpg :refer [gpg]]
             [feeds2imap.logging :refer [info error]]
             [feeds2imap.types :refer :all]
@@ -36,10 +36,11 @@
       (.createNewFile file)
       (spit path (str initial)))))
 
-(ann ^:no-check read-or-create-file (IFn [String (Set String) -> Cache]
-                                         [String (HMap) -> (Folder Urls)]
-                                         [String (HMap) -> ImapConfiguration]
-                                         [String String -> ImapConfiguration]))
+;(ann ^:no-check read-or-create-file (IFn [String (Set String) -> Cache]
+;                                         [String (HMap) -> (Folder Urls)]
+;                                         [String (HMap) -> ImapConfiguration]
+;                                         [String String -> ImapConfiguration]))
+(ann read-or-create-file (IFn [String Any -> Any]))
 (defn ^:private read-or-create-file [path initial]
   (let [path (str (config-dir) path)]
     (bootstrap-config-dir)
@@ -118,8 +119,8 @@
       (info out)
       true)))
 
-(ann ^:no-check rm! [String -> Any])
-(defn ^:private rm! [path]
+(ann rm! [String -> Any])
+(defn ^:private rm! [^String path]
   (let [file (File. path)]
     (when (.exists file)
       (.delete file))))
@@ -134,7 +135,7 @@
 (defn ^:private encryption-recipient []
   (str (System/getenv "FEEDS_ENC_RECIPIENT")))
 
-(ann ^:no-check encrypt-imap! [-> Any])
+(ann encrypt-imap! [-> Any])
 (defn encrypt-imap! []
   (let [result (gpg "--quiet"
                     "--batch"
@@ -146,7 +147,7 @@
     (when (handle-gpg-result result)
       (rm! (unencrypted-imap-path)))))
 
-(ann ^:no-check decrypt-imap! [-> Any])
+(ann decrypt-imap! [-> Any])
 (defn decrypt-imap! []
   (let [result (gpg "--quiet"
                     "--batch"
@@ -161,5 +162,7 @@
 (ann urls (IFn [-> (Folder Urls)]
                [(Folder Urls) -> Any]))
 (defn urls
-  ([] (read-or-create-file "urls.clj" (hash-map)))
+  ([] 
+   {:post [((t/pred (Folder Urls)) %)]}
+   (read-or-create-file "urls.clj" (hash-map)))
   ([data] (write-file "urls.clj" (with-out-str (pprint data)))))

@@ -1,4 +1,5 @@
 (ns ^:core.typed feeds2imap.feeds
+  (:refer-clojure :exclude [fn let])
   (:require [hiccup.core :refer :all]
             [feedparser-clj.core :refer :all]
             [feeds2imap.message :as message]
@@ -7,7 +8,7 @@
             [clojure.pprint :refer :all]
             [feeds2imap.logging :refer [info error]]
             [feeds2imap.macro :refer :all]
-            [clojure.core.typed :refer [ann Map IFn HMap] :as t]
+            [clojure.core.typed :refer [ann Map IFn HMap fn let] :as t]
             [feeds2imap.types :refer :all]
             [feeds2imap.annotations :refer :all]
             [digest :refer [md5]]
@@ -21,51 +22,63 @@
             [com.sun.syndication.io ParsingFeedException]
             [java.util Date]))
 
-(ann ^:no-check map-items (IFn [(IFn [ParsedFeed -> Items])   (Folder ParsedFeed) -> (Folder UnflattenedItems)]
-                               [(IFn [Item       -> Message]) (Folder Items)      -> (Folder Messages)]))
+(ann map-items 
+     (t/All [v v']
+        [[v -> v'] (FolderSeq (t/Coll v)) -> (FolderSeq (t/Coll v'))]))
 (defn map-items
   "Map function over items for each folder."
   [fun coll]
-  (map (t/fn [[folder items]] [folder (map fun items)]) coll))
+  (map (fn [[folder items] :- '[t/Kw (t/Seqable v)]] 
+         [folder (map fun items)])
+       coll))
 
-(ann ^:no-check pmap-items [(IFn [String -> ParsedFeed]) (Folder Urls) -> (Folder ParsedFeed)])
+(ann pmap-items 
+     (t/All [v v']
+        [[v -> v'] (FolderSeq (t/Coll v)) -> (FolderSeq (t/Coll v'))]))
 (defn pmap-items
   "Map function over items for each folder using pmap."
   [fun coll]
-  (pmap (fn [[folder items]] [folder (pmap fun items)]) coll))
+  (pmap (fn [[folder items] :- '[t/Kw (t/Seqable v)]] 
+          [folder (pmap fun items)])
+        coll))
 
-(ann ^:no-check filter-items [(IFn [Item -> Boolean]) (Folder Items) -> (Folder Items)])
+(ann filter-items [(IFn [Item -> Boolean]) (FolderSeq Items) -> (FolderSeq Items)])
 (defn filter-items
   "Filter items for each folder.
    Filter folders with non empty items collection."
   [fun coll]
   (->> coll
-       (map (fn [[folder items]]
+       (map (fn [[folder items] :- '[t/Kw Items]]
               [folder (filter fun items)]))
-       (filter (fn [[folder items]]
+       (filter (fn [[folder items] :- '[t/Kw Items]]
                  (seq items)))))
 
-(ann ^:no-check flatten-items [(Folder UnflattenedItems) -> (Folder Items)])
+(ann flatten-items [(FolderSeq UnflattenedItems) -> (FolderSeq Items)])
 (defn flatten-items [items]
-  (map (fn [[folder items]]
-         [folder (flatten items)])
+  (map (fn [[folder items] :- '[t/Kw UnflattenedItems]]
+         (let [c (t/tc-ignore (apply concat items))
+               _ (assert ((t/pred Items) c))]
+           [folder c]))
        items))
 
-(ann ^:no-check item-authors [Item -> String])
+(ann item-authors [Item -> String])
 (defn item-authors [{:keys [authors]}]
   "Format each author as
    \"Name <name[at]example.com> http://example.com/\".
    Multiple authors are coma-separated"
-  (letfn [(format-author [author]
-            (let [{:keys [name email uri]} author
-                  email (when email
-                          (format "<%s>" (apply str (replace {\@ "[at]"} email))))
-                  fields (filter (complement nil?)
-                                 [name email uri])]
-              (s/join " " fields)))]
+  (let [format-author
+        (fn [author :- Author]
+          (let [{:keys [name email uri]} author
+                email (when email
+                        (t/tc-ignore
+                          (format "<%s>" (apply str (replace {\@ "[at]"} email)))))
+                _ (assert ((t/pred (t/U nil String)) email))
+                fields (filter (complement nil?)
+                               [name email uri])]
+            (s/join " " fields)))]
     (s/join ", " (map format-author authors))))
 
-(ann ^:no-check uniq-identifier [Item -> String])
+(ann uniq-identifier [Item -> String])
 (defn uniq-identifier
   "Generates unique identifier for item.
    First try uri, then url, then link.
@@ -89,14 +102,17 @@
   (str (or (-> item :contents first :value)
            (-> item :description :value))))
 
-(ann ^:no-check encoded-word [String -> String])
+(ann encoded-word [String -> String])
 (defn ^:private encoded-word
   "Encodes From: field. See http://en.wikipedia.org/wiki/MIME#Encoded-Word"
-  [s]
-  (let [encoded-text (String. (b64/encode (.getBytes s "UTF-8")))]
+  [^String s]
+  (let [^bytes encode64 (t/tc-ignore 
+                          (b64/encode (.getBytes s "UTF-8")))
+        encoded-text (t/tc-ignore
+                       (String. encode64))]
     (str "=?UTF-8?B?" encoded-text "?=")))
 
-(ann ^:no-check item-pubdate [Item -> Date])
+(ann item-pubdate [Item -> (t/U nil Date)])
 (defn item-pubdate [item]
   (or (:updated-date item) (:published-date item)))
 
@@ -120,64 +136,79 @@
 (defn items-to-emails [session from to item]
   (message/from-map session (to-email-map from to item)))
 
-(ann to-emails [Session String String (Folder Items) -> (Folder Messages)])
+(ann to-emails [Session String String (FolderSeq Items) -> (FolderSeq Messages)])
 (defn to-emails
   "Convert items to Messages."
   [session from to items]
-  (map-items (partial items-to-emails session from to) items))
+  (map-items (t/ann-form
+               (partial items-to-emails session from to)
+              [Item -> Message])
+             items))
 
-(ann ^:no-check set-entries-authors [ParsedFeed -> ParsedFeed])
+(ann set-entries-authors [ParsedFeed -> ParsedFeed])
 (defn set-entries-authors [feed]
-  (let [feed-as-author {:name (:title feed) :uri (:link feed)}
-        set-authors (fn [e]
+  (let [feed-as-author :- Author, {:name (:title feed) :uri (:link feed)}
+        set-authors (fn [e :- Item] :- Item
                       (if (seq (:authors e))
                         e
                         (assoc e :authors [feed-as-author])))
         entries (map set-authors (:entries feed))]
     (assoc feed :entries entries)))
 
-(ann ^:no-check parse [String -> ParsedFeed])
+(ann parse [String -> ParsedFeed])
 (defn parse [url]
-  (letfn [(log-try [url n-try reason]
-            (if (> n-try 1)
-              (error "Fetching" url "try" n-try "reason is" reason)
-              (info  "Fetching" url)))
-          (parse-try
-            ([url] (parse-try url 1 :no-reason))
-            ([url n-try reason]
-             (log-try url n-try reason)
-             (try*
-              (if (< n-try 3)
-                (-> url parse-feed set-entries-authors)
-                {:entries ()})
-              (catch* [ConnectException
-                       NoRouteToHostException
-                       UnknownHostException
-                       ParsingFeedException
-                       IllegalArgumentException
-                       IOException] e (parse-try url (inc n-try) e)))))]
+  (let [log-try (fn [url    :- String
+                     n-try  :- t/Num
+                     reason :- (t/U t/Kw Exception)]
+                  (if (> n-try 1)
+                    (error "Fetching" url "try" n-try "reason is" reason)
+                    (info  "Fetching" url)))
+        parse-try
+        (fn parse-try
+          ([url :- String] :- ParsedFeed
+           (parse-try url 1 :no-reason))
+          ([url    :- String
+            n-try  :- t/Num
+            reason :- (t/U t/Kw Exception)] :- ParsedFeed
+           (log-try url n-try reason)
+           (try*
+             (if (< n-try 3)
+               (-> url parse-feed set-entries-authors)
+               {:entries ()})
+             (catch* [ConnectException
+                      NoRouteToHostException
+                      UnknownHostException
+                      ParsingFeedException
+                      IllegalArgumentException
+                      IOException] e (parse-try url (inc n-try) e)))))]
     (parse-try url)))
 
-(ann ^:no-check reduce-new-items [Cache (Folder Items) -> (HMap :mandatory {:new-items (Folder Items)
-                                                                            :cache Cache})])
+(t/defalias NewItems
+  (HMap :mandatory {:new-items (Folder Items)
+                    :cache Cache}))
+
+(ann reduce-new-items [Cache (FolderSeq Items) -> NewItems])
 (defn reduce-new-items [cache parsed-feeds]
-  (reduce (fn [{:keys [cache new-items] :as val} [folder items]]
-            (reduce (fn [{:keys [cache] :as val} item]
+  (reduce (fn [{:keys [cache new-items] :as val} :- NewItems
+                 [folder items] :- '[t/Kw Items]]
+            (reduce (fn [{:keys [cache] :as val} :- NewItems
+                           item :- Item]
+                      {:post [((t/pred NewItems) %)]}
                       (if (new? cache item)
-                        (-> val
-                            (update-in [:cache] (fn [new-cache] (assoc new-cache (md5-identifier item) (System/currentTimeMillis))))
-                            (update-in [:new-items folder] (fn [new-items] (conj new-items item))))
+                        (t/tc-ignore
+                          (-> val
+                              (update-in [:cache] (fn [new-cache] (assoc new-cache (md5-identifier item) (System/currentTimeMillis))))
+                              (update-in [:new-items folder] (fn [new-items] (conj new-items item)))))
                         val))
                     val
                     items))
           {:cache cache :new-items {}}
           parsed-feeds))
 
-(ann new-items [Cache (Folder Urls) -> (HMap :mandatory {:new-items (Folder Items)
-                                                         :cache Cache})])
+(ann new-items [Cache (Folder Urls) -> NewItems])
 (defn new-items [cache urls]
   (->> urls
        (pmap-items parse)
-       (map-items :entries)
+       (map-items (t/ann-form :entries [ParsedFeed -> Items]))
        flatten-items
        (reduce-new-items cache)))

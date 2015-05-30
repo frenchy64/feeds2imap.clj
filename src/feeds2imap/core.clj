@@ -73,14 +73,14 @@
       (sleep (* minutes 60 1000))
       (recur current-task))))
 
-(ann add [Keyword String -> Any])
+(ann add [(t/U String Keyword) String -> Any])
 (defn add [folder url]
   (let [folder (keyword folder)
         urls (settings/urls)
         folder-urls (or (get urls folder) [])]
     (settings/urls (assoc urls folder (conj folder-urls url)))))
 
-(ann ^:no-check shutdown-agents-with-try [-> Any])
+(ann shutdown-agents-with-try [-> Any])
 (defn shutdown-agents-with-try []
   (try*
    (shutdown-agents)
@@ -90,7 +90,7 @@
 (ann show [-> nil])
 (defn show [] (pprint (settings/urls)))
 
-(ann ^:no-check -main [Any -> Any])
+(ann -main [String * -> Any])
 (defn -main
   [& args]
   (match args

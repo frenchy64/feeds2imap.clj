@@ -63,9 +63,9 @@
         m (opml-build-map (:content b))]
     m))
 
-(ann ^:no-check convert-and-print-from-file! [File -> nil])
-(defn convert-and-print-from-file! [path]
-  (->> (File. ^String path)
+(ann ^:no-check convert-and-print-from-file! [String -> nil])
+(defn convert-and-print-from-file! [^String path]
+  (->> (File. path)
        convert-opml
        pprint))
 
