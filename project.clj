@@ -1,5 +1,3 @@
-(def core-typed-version "0.3.0-SNAPSHOT")
-
 (defproject feeds2imap "0.3.1"
   :description "Pull RSS/Atom feeds to your IMAP folders with Clojure on JVM."
   :url "https://github.com/Gonzih/feeds2imap.clj"
@@ -15,7 +13,7 @@
                  [javax.mail/mail "1.4.7"]
                  [org.clojars.scsibug/feedparser-clj "0.4.0"]
                  [org.clojure/data.codec "0.1.0"]
-                 [org.clojure/core.typed "0.3.0-SNAPSHOT"]
+                 [org.clojure/core.typed "0.3.0-alpha5"]
                  [hiccup "1.0.5"]
                  [digest "1.4.4"]
                  [org.clojure/core.match "0.2.2"]]
