@@ -53,11 +53,12 @@
        (filter (fn [[folder items] :- '[t/Kw Items]]
                  (seq items)))))
 
-(ann flatten-items [(FolderSeq UnflattenedItems) -> (FolderSeq Items)])
+(ann ^:no-check flatten-items [(FolderSeq UnflattenedItems) -> (FolderSeq Items)])
 (defn flatten-items [items]
   (map (fn [[folder items] :- '[t/Kw UnflattenedItems]]
          (let [c (t/tc-ignore (apply concat items))
-               _ (assert ((t/pred Items) c))]
+               ;_ (assert ((t/pred Items) c))
+               ]
            [folder c]))
        items))
 
@@ -187,13 +188,13 @@
   (HMap :mandatory {:new-items (Folder Items)
                     :cache Cache}))
 
-(ann reduce-new-items [Cache (FolderSeq Items) -> NewItems])
+(ann ^:no-check reduce-new-items [Cache (FolderSeq Items) -> NewItems])
 (defn reduce-new-items [cache parsed-feeds]
   (reduce (fn [{:keys [cache new-items] :as val} :- NewItems
                  [folder items] :- '[t/Kw Items]]
             (reduce (fn [{:keys [cache] :as val} :- NewItems
                            item :- Item]
-                      {:post [((t/pred NewItems) %)]}
+                      ;{:post [((t/pred NewItems) %)]}
                       (if (new? cache item)
                         (t/tc-ignore
                           (-> val

@@ -15,7 +15,7 @@
   (try
     (apply shell/sh gpg-program args)
     (catch java.io.IOException e
-      {:exit 1 :err (.getMessage e)})))
+      {:exit 1 :err (.getMessage ^Throwable e)})))
 
 (ann gpg-available? [-> Boolean])
 (defn gpg-available?

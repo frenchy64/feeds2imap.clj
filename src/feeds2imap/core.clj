@@ -90,7 +90,7 @@
 (ann show [-> nil])
 (defn show [] (pprint (settings/urls)))
 
-(ann -main [String * -> Any])
+(ann ^:no-check -main [String * -> Any])
 (defn -main
   [& args]
   (match args

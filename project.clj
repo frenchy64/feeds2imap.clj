@@ -9,18 +9,20 @@
                        feeds2imap.imap
                        feeds2imap.message
                        feeds2imap.settings]}
-  :dependencies [[org.clojure/clojure "1.7.0-RC1"]
+  :dependencies [[org.clojure/clojure "1.7.0-RC2"]
                  [javax.mail/mail "1.4.7"]
                  [org.clojars.scsibug/feedparser-clj "0.4.0"]
                  [org.clojure/data.codec "0.1.0"]
-                 [org.clojure/core.typed "0.3.0-alpha5"]
+                 [org.clojure/core.typed "0.3.8-SNAPSHOT" :classifier "slim"]
                  [hiccup "1.0.5"]
                  [digest "1.4.4"]
+                 [com.taoensso/timbre "2.1.2"]
                  [org.clojure/core.match "0.2.2"]]
-  :repl-options {:nrepl-middleware [clojure.core.typed.repl/wrap-clj-repl]}
-  :main feeds2imap.core
+  ;:repl-options {:nrepl-middleware [clojure.core.typed.repl/wrap-clj-repl]}
+  ;:main feeds2imap.core
   :profiles {:dev {:dependencies [[midje "1.6.3"]
-                                  [org.clojure/test.check "0.7.0"]]
+                                  [org.clojure/test.check "0.7.0"]
+                                  #_[com.taoensso/timbre "2.1.2"]]
                    :plugins [[lein-midje "3.1.3"]]
                    }
              :uberjar {:aot :all}}
